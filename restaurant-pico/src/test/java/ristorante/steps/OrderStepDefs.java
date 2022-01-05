@@ -18,7 +18,6 @@ import ristorante.entity.Order.OrderStatus;
 import ristorante.entity.OrderLine;
 import ristorante.entity.Tables;
 import ristorante.pages.OrderPageObject;
-import ristorante.pages.PageFrameSwitcher;
 import ristorante.pages.ScenarioData;
 
 public class OrderStepDefs {
@@ -26,8 +25,6 @@ public class OrderStepDefs {
 	private OrderPageObject orderPO;
 
 	private ScenarioData data;
-
-	private PageFrameSwitcher frameSwitcher;
 
 	private BiConsumer<Optional<OrderLine>, Dish> checkDish = (l, d) -> {
 		if (!l.isPresent())
@@ -39,19 +36,16 @@ public class OrderStepDefs {
 	private BiFunction<Dish, Integer, OrderLine> line = (d, q) -> new OrderLine(0, d, q);
 
 	private BiConsumer<List<OrderLine>, OrderLine> addLine = (l, o) -> l.add(o);
-	
 
-	public OrderStepDefs(ScenarioData data, PageFrameSwitcher frameSwitcher, OrderPageObject orderPO) {
+	public OrderStepDefs(ScenarioData data, OrderPageObject orderPO) {
 
 		this.data = data;
-		this.frameSwitcher = frameSwitcher;
 		this.orderPO = orderPO;
 	}
 
 	@When("User creates new order by selecting dishes")
 	public void userCreatesNewOrderBySelectingDishes(List<OrderLine> lines) {
 
-		//frameSwitcher.switchScreen(orderPO);
 		for (int i = 0; i < lines.size(); i++) {
 			// Complex ways of adding quantities for first 2 dishes
 			orderPO.selectDish(lines.get(i).getDish().getName());
@@ -74,14 +68,12 @@ public class OrderStepDefs {
 
 	@When("User creates new order without selecting dish")
 	public void userCreatesNewOrderWithoutSelectingDish() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		orderPO.saveOrder();
 	}
 
 	private void orderOperations(List<OrderLine> lines, BiConsumer<Optional<OrderLine>, Dish> checkDish,
-			BiConsumer<OrderPageObject, Integer> operation,
-			BiConsumer<List<OrderLine>, Optional<OrderLine>> removeLine, Object[] addLineArgs) {
+			BiConsumer<OrderPageObject, Integer> operation, BiConsumer<List<OrderLine>, Optional<OrderLine>> removeLine,
+			Object[] addLineArgs) {
 
 		List<OrderLine> existingLines = data.getInitialOrder().getOrderLines();
 		for (int i = 0; i < lines.size(); i++) {
@@ -98,7 +90,7 @@ public class OrderStepDefs {
 
 			if (addLineArgs.length == 3) {
 				IntBinaryOperator quantity = (IntBinaryOperator) addLineArgs[0];
-				@SuppressWarnings({ "unchecked"})
+				@SuppressWarnings({ "unchecked" })
 				BiFunction<Dish, Integer, OrderLine> line = (BiFunction<Dish, Integer, OrderLine>) addLineArgs[1];
 				@SuppressWarnings("unchecked")
 				BiConsumer<List<OrderLine>, OrderLine> addLine = (BiConsumer<List<OrderLine>, OrderLine>) addLineArgs[2];
@@ -112,9 +104,6 @@ public class OrderStepDefs {
 
 	@When("User adds following quantitiy to existing dishes")
 	public void userAddsQuantityToExistingDish(List<OrderLine> lines) {
-
-		//frameSwitcher.switchScreen(orderPO);
-
 		BiConsumer<OrderPageObject, Integer> operation = (m, n) -> m.addQuantityToDish(n);
 		IntBinaryOperator quantity = (i, j) -> i + j;
 		orderOperations(lines, checkDish, operation, removeLine, new Object[] { quantity, line, addLine });
@@ -122,9 +111,6 @@ public class OrderStepDefs {
 
 	@When("User adds following new dishes")
 	public void userAddsNewDish(List<OrderLine> lines) {
-
-		//frameSwitcher.switchScreen(orderPO);
-
 		BiConsumer<Optional<OrderLine>, Dish> checkDish = (l, d) -> {
 			if (l.isPresent())
 				fail("Dish " + d.getName() + " is an existing ordered dish.");
@@ -139,10 +125,8 @@ public class OrderStepDefs {
 
 	@When("User subtracts following quantity from existing dishes")
 	public void userSubtractsQuantityFromExistingDish(List<OrderLine> lines) {
-
-		//frameSwitcher.switchScreen(orderPO);
-
 		OrderStatus status = data.getInitialOrder().getStatus();
+
 		if (status == OrderStatus.ORDERED) {
 			BiConsumer<OrderPageObject, Integer> operation = (m, n) -> m.subtractQuantityFromDish(n);
 			IntBinaryOperator quantity = (i, j) -> i - j;
@@ -157,9 +141,6 @@ public class OrderStepDefs {
 
 	@When("User removes following existing dishes")
 	public void userRemovesExistingDish(List<Dish> dishes) {
-
-		//frameSwitcher.switchScreen(orderPO);
-
 		List<OrderLine> lines = dishes.stream().map(d -> new OrderLine(0, d, 0)).collect(Collectors.toList());
 
 		OrderStatus status = data.getInitialOrder().getStatus();
@@ -176,9 +157,6 @@ public class OrderStepDefs {
 
 	@When("User subtracts quantity till zero from following existing dishes")
 	public void userSubtractsQuantityTillZero(List<Dish> dishes) {
-
-		//frameSwitcher.switchScreen(orderPO);
-
 		List<OrderLine> lines = data.getInitialOrder().getOrderLines().stream()
 				.filter(l -> dishes.contains(l.getDish())).collect(Collectors.toList());
 
@@ -188,8 +166,6 @@ public class OrderStepDefs {
 
 	@When("User cancels the order")
 	public void userCancelsTheOrder() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		orderPO.cancelOrder();
 
 		OrderStatus initialState = data.getInitialOrder().getStatus();
@@ -203,73 +179,56 @@ public class OrderStepDefs {
 
 	@When("User cancels the order cancellation")
 	public void userCancelsTheOrderCancellation() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		orderPO.cancelOrderCancellation();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Then("Created/Updated/Promoted order details should be displayed")
 	public void orderDetailsShouldBeUpdatedDisplayed() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		Order expectedOrder = data.getInitialOrder();
 		Order actualOrder = orderPO.getOrderDetails();
-		//System.out.println("expectedOrder - " + expectedOrder);
-		//System.out.println("actualOrder - " + actualOrder);
+
 		assertThat(actualOrder).isEqualToIgnoringGivenFields(expectedOrder, "id", "orderLines").extracting("orderLines")
 				.asList().usingElementComparatorIgnoringFields("id")
 				.containsOnlyElementsOf(expectedOrder.getOrderLines());
 
 		data.setOrderNo(String.valueOf(actualOrder.getId()));
 	}
-	
+
 	@Then("Modification message should be displayed in order details")
 	public void modificationMessageShouldBeDisplayedInOrderDetails() {
-		
-		//frameSwitcher.switchScreen(orderPO);
-		//System.out.println("message--"+orderPO.getOrderMessage());
-		assertThat(orderPO.getOrderMessage()).isEqualToIgnoringCase("The order for this table has been updated. Press OK to view.");
+		assertThat(orderPO.getOrderMessage())
+				.isEqualToIgnoringCase("The order for this table has been updated. Press OK to view.");
 	}
-	
+
 	@Then("Modification message should not be displayed in order details")
 	public void modificationMessageShouldNotBeDisplayedInOrderDetails() {
-		
-		//frameSwitcher.switchScreen(orderPO);
-		//System.out.println("message--"+orderPO.getOrderMessage());
 		assertThat(orderPO.getOrderMessage()).isEmpty();
 	}
-	
+
 	@Then("Order modify and cancel buttons should be disabled")
 	public void orderModifyAndCancelButtonsShouldBeDisabled() {
-
-		//frameSwitcher.switchScreen(orderPO);
-		boolean[] enabledStatus = {false, false};
+		boolean[] enabledStatus = { false, false };
 		assertThat(orderPO.retrieveButtonEnabledStatus()).containsExactly(enabledStatus);
 	}
-	
+
 	@Then("Order modify and cancel buttons should not be disabled")
 	public void orderModifyAndCancelButtonsShouldNotBeDisabled() {
-
-		//frameSwitcher.switchScreen(orderPO);
-		boolean[] enabledStatus = {true, true};
+		boolean[] enabledStatus = { true, true };
 		assertThat(orderPO.retrieveButtonEnabledStatus()).containsExactly(enabledStatus);
 	}
-	
+
 	@Then("User refreshes order")
 	public void userRefreshesOrder() {
-		
-		//frameSwitcher.switchScreen(orderPO);
 		orderPO.refreshOrder();
 	}
 
+	@SuppressWarnings("deprecation")
 	@Then("Order (details )should not be created/updated")
 	public void orderShouldNotBeCreated() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		Order expectedOrder = data.getInitialOrder();
 		Order actualOrder = orderPO.getOrderDetails();
-		//System.out.println("expectedOrder - " + expectedOrder);
-		//System.out.println("actualOrder - " + actualOrder);
+
 		assertThat(actualOrder).isEqualToIgnoringGivenFields(expectedOrder, "id", "orderLines").extracting("orderLines")
 				.asList().usingElementComparatorIgnoringFields("id")
 				.containsOnlyElementsOf(expectedOrder.getOrderLines());
@@ -280,29 +239,21 @@ public class OrderStepDefs {
 
 	@Then("Alert is displayed with order creation message")
 	public void alertIsDisplayedWithOrderCreationMessage() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		assertThat(orderPO.getAlertMessage()).isEqualTo("Order is created.");
 	}
 
 	@Then("Alert is displayed with order updation message")
 	public void alertIsDisplayedWithOrderUpdationMessage() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		assertThat(orderPO.getAlertMessage()).isEqualTo("Order is updated.");
 	}
 
 	@Then("Alert is displayed with order creation warning")
 	public void alertIsDisplayedWithIllegalOperationWarning() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		assertThat(orderPO.getAlertMessage()).isEqualTo("Order needs atleast one dish.");
 	}
 
 	@Then("Alert is displayed with status changed warning")
 	public void alertIsDisplayedWithStatusChangedWarning() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		OrderStatus status = data.getInitialOrder().getStatus();
 
 		if (status == OrderStatus.PREPARING) {
@@ -316,16 +267,12 @@ public class OrderStepDefs {
 
 	@Then("Alert is displayed with illegal dish quantity removal warning")
 	public void alertIsDisplayedWithIllegalDishQuantityRemovalWarning() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		assertThat(orderPO.getAlertMessage())
 				.isEqualTo("Your order is getting prepared. Number of already ordered dishes cannot be reduced.");
 	}
 
 	@Then("Alert is displayed with illegal dish removal warning")
 	public void alertIsDisplayedWithIllegalDishRemovalWarning() {
-
-		//frameSwitcher.switchScreen(orderPO);
 		assertThat(orderPO.getAlertMessage())
 				.isEqualTo("Your order is getting prepared. Already ordered dishes cannot be removed.");
 	}

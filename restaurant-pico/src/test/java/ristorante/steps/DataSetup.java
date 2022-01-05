@@ -7,10 +7,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.opera.OperaDriver;
 
-import io.cucumber.core.api.Scenario;
-import io.cucumber.core.event.Status;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
+import io.cucumber.java.Scenario;
+import io.cucumber.java.Status;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import ristorante.entity.Order;
 import ristorante.entity.Tables;
